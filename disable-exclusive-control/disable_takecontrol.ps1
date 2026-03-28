@@ -43,5 +43,3 @@ foreach ($regPath in $paths) {
 # By disabling this setting and granting all applications microphone permissions, users can ensure that their microphone continues to function properly after Windows updates.
 
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone" /v Value /t REG_SZ /d Allow /f
-
-Export-ModuleMember -Variable 'Default_AD_Playback'

@@ -8,7 +8,9 @@
 
 # Install AudioDeviceCmdlet powershell module - https://github.com/frgnca/AudioDeviceCmdlets
 
-Install-Module -Name AudioDeviceCmdlets -Scope CurrentUser -Repository PSGallery -Force
+if (-not (Get-Module -ListAvailable -Name AudioDeviceCmdlets)) {
+    Install-Module -Name AudioDeviceCmdlets -Scope CurrentUser -Repository PSGallery -Force
+}
 Import-Module AudioDeviceCmdlets
 
 $key = "b3f8fa53-0004-438e-9003-51a46e139bfc" # {b3f8fa53-0004-438e-9003-51a46e139bfc} is the registry key for "DeviceState_Flags" which controls the "Take Exclusive Control" setting for audio devices
@@ -41,3 +43,5 @@ foreach ($regPath in $paths) {
 # By disabling this setting and granting all applications microphone permissions, users can ensure that their microphone continues to function properly after Windows updates.
 
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone" /v Value /t REG_SZ /d Allow /f
+
+Export-ModuleMember -Variable 'Default_AD_Playback'

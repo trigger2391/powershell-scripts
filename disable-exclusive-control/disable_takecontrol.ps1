@@ -2,40 +2,42 @@
 # Script Name: disable_takecontrol
 # Author: Matthew Bernardin
 # Date: 2026-01-23
-# Version 0.2
+# Version 0.3
 # Description: Disables Take Exclusive Control setting for Headset devices and grants all apps microphone permissions
 # ==========================================
 
 # Install AudioDeviceCmdlet powershell module - https://github.com/frgnca/AudioDeviceCmdlets
 
-Install-Module -Name AudioDeviceCmdlets -Force
+Install-Module -Name AudioDeviceCmdlets -Scope CurrentUser -Repository PSGallery -Force
 Import-Module AudioDeviceCmdlets
 
-# Retrieve Audio Device GUID's and pipe them to a variable
+$key = "b3f8fa53-0004-438e-9003-51a46e139bfc" # {b3f8fa53-0004-438e-9003-51a46e139bfc} is the registry key for "DeviceState_Flags" which controls the "Take Exclusive Control" setting for audio devices
 
-Get-AudioDevice -Playback | foreach-object $Default_AD_Playback
-Get-AudioDevice -Recording | foreach-object $Default_AD_Recording  
-Get-AudioDevice -PlaybackCommunication | foreach-object $Default_CD_Playback
-Get-AudioDevice -RecordingCommunication | foreach-object $Default_CD_Recording
+# Retrieve Audio Device GUID's and assign them to a variable for use in the registry key path
+$Default_AD_Playback = (Get-AudioDevice -Playback).Id
+$Default_AD_Recording = (Get-AudioDevice -Recording).Id
+$Default_CD_Playback = (Get-AudioDevice -PlaybackCommunication).Id
+$Default_CD_Recording = (Get-AudioDevice -RecordingCommunication).Id
 
-# Apply regkey to to disable Take Exclusive Control on Playback & Recording for Default Audio Device and Default Communications Device
+# Create an array of registry paths (playback and recording) for both the default audio device and the default communication device.
+# Each path points to the "Properties" subkey where the "Take Exclusive Control" setting is stored.
 
-$regPath = "HKLM:\S0FTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Playback\{$Default_AD_Playback}\Properties New-ItemProperty" 
-$key = "b3f8fa53-0004-438e-9003-51a46e139bfc"
-New-ItemProperty -Path $regPath -Name $key -Value 0 -PropertyType DWORD
+$paths = @(
+    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Playback\$($Default_AD_Playback)\Properties",
+    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture\$($Default_AD_Recording)\Properties",
+    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Playback\$($Default_CD_Playback)\Properties",
+    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture\$($Default_CD_Recording)\Properties"
+)
 
-$regPath = "HKLM:\S0FTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture\{$Default_AD_Recording}\Properties New-ItemProperty" 
-$key = "b3f8fa53-0004-438e-9003-51a46e139bfc"
-New-ItemProperty -Path $regPath -Name $key -Value 0 -PropertyType DWORD
+# Loop through each registry path and set the "Take Exclusive Control" setting to 0 (disabled) for each default audio device
 
-$regPath = "HKLM:\S0FTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Playback\{$Default_CD_Playback}\Properties New-ItemProperty" 
-$key = "b3f8fa53-0004-438e-9003-51a46e139bfc"
-New-ItemProperty -Path $regPath -Name $key -Value 0 -PropertyType DWORD
+foreach ($regPath in $paths) {
+    New-ItemProperty -Path $regPath -Name $key -Value 0 -PropertyType DWORD -Force
+}
 
-$regPath = "HKLM:\S0FTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture\{$Default_CD_Recording}\Properties New-ItemProperty" 
-$key = "b3f8fa53-0004-438e-9003-51a46e139bfc"
-New-ItemProperty -Path $regPath -Name $key -Value 0 -PropertyType DWORD
-
-# Allow all applications to access the microphone
+# Allow all applications to access the microphone by setting the "Value" registry key to "Allow" in the "ConsentStore\microphone" registry path. 
+# This will grant all applications permission to access the microphone without prompting the user for consent.
+# This is designed to combat Windows 11 disabling microphone access after an update, which is a common issue that can occur when the "Take Exclusive Control" setting is enabled for audio devices. 
+# By disabling this setting and granting all applications microphone permissions, users can ensure that their microphone continues to function properly after Windows updates.
 
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone" /v Value /t REG_SZ /d Allow /f

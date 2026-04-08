@@ -15,11 +15,15 @@ Import-Module AudioDeviceCmdlets
 
 $key = "b3f8fa53-0004-438e-9003-51a46e139bfc" # {b3f8fa53-0004-438e-9003-51a46e139bfc} is the registry key for "DeviceState_Flags" which controls the "Take Exclusive Control" setting for audio devices
 
-# Retrieve Audio Device GUID's and assign them to a variable for use in the registry key path
+# Retrieve Audio Device GUID's and assign them to a variable for use in the registry key path and remove the leading part of the GUID path to get just the device ID for use in the registry path
 $Default_AD_Playback = (Get-AudioDevice -Playback).Id
+$Default_AD_Playback -replace "^.*." 
 $Default_AD_Recording = (Get-AudioDevice -Recording).Id
+$Default_AD_Recording -replace "^.*."
 $Default_CD_Playback = (Get-AudioDevice -PlaybackCommunication).Id
+$Default_CD_Playback -replace "^.*." 
 $Default_CD_Recording = (Get-AudioDevice -RecordingCommunication).Id
+$Default_CD_Recording -replace "^.*."
 
 # Create an array of registry paths (playback and recording) for both the default audio device and the default communication device.
 # Each path points to the "Properties" subkey where the "Take Exclusive Control" setting is stored.

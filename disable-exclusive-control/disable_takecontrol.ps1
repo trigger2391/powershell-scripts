@@ -29,9 +29,9 @@ $Default_CD_Recording -replace "^.*."
 # Each path points to the "Properties" subkey where the "Take Exclusive Control" setting is stored.
 
 $paths = @(
-    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Playback\$($Default_AD_Playback)\Properties",
+    # "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Playback\$($Default_AD_Playback)\Properties",
     "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture\$($Default_AD_Recording)\Properties",
-    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Playback\$($Default_CD_Playback)\Properties",
+    # "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Playback\$($Default_CD_Playback)\Properties",
     "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture\$($Default_CD_Recording)\Properties"
 )
 

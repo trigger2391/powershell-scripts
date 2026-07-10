@@ -68,22 +68,17 @@ foreach ($regPath in $allDevicePaths) {
 }
 
 # Set microphone permissions (HKCU)
-try {
-    $micPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone"
 
-    if (-not (Test-Path $micPath)) {
-        New-Item -Path $micPath -Force | Out-Null
-    }
+$PFN = "MicrosoftCorporationII.Windows365_8wekyb3d8bbwe"
 
-    New-ItemProperty `
-        -Path $micPath `
-        -Name "Value" `
-        -Value "Allow" `
-        -PropertyType String `
-        -Force
+$BasePath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone"
+$AppPath  = Join-Path $BasePath $PFN
 
-    Write-Output "Microphone access set to Allow"
+if (-not (Test-Path $AppPath)) {
+    New-Item -Path $AppPath -Force | Out-Null
+}
 
+New-ItemProperty -Path $AppPath -Name "Value" -Value "Allow" -PropertyType String -Force | Out-Null
 } catch {
     Write-Output "Failed to set microphone permissions"
 }

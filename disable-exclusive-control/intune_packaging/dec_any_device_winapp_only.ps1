@@ -1,7 +1,7 @@
 # ==========================================
 # Script Name: disable_takecontrol
 # Author: Matthew Bernardin
-# Version: 0.5 (Multi-device safe)
+# Version: 0.6 - Release Candidate 1
 # ==========================================
 
 # Ensure PSGallery is trusted

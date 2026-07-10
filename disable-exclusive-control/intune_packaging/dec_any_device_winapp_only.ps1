@@ -79,8 +79,3 @@ if (-not (Test-Path $AppPath)) {
 }
 
 New-ItemProperty -Path $AppPath -Name "Value" -Value "Allow" -PropertyType String -Force | Out-Null
-} catch {
-    Write-Output "Failed to set microphone permissions"
-}
-
-exit 0

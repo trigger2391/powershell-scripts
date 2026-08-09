@@ -1,25 +1,19 @@
 # ==========================================
 # Script Name: disable_takecontrol
 # Author: Matthew Bernardin
-# Version: 0.6 - Release Candidate 1
+# Version: 0.8 - Release Candidate 2
 # ==========================================
 
+#Requires -RunAsAdministrator
+
 # Ensure PSGallery is trusted
-Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted -ErrorAction SilentlyContinue
+Set-PSRepository `
+    -Name "PSGallery" `
+    -InstallationPolicy Trusted `
+    -ErrorAction SilentlyContinue
 
-# Install module if missing
-if (-not (Get-Module -ListAvailable -Name AudioDeviceCmdlets)) {
-    try {
-        Install-Module -Name AudioDeviceCmdlets -Scope CurrentUser -Force -ErrorAction Stop
-    } catch {
-        Write-Output "Failed to install AudioDeviceCmdlets"
-        exit 1
-    }
-}
-
-Import-Module AudioDeviceCmdlets -ErrorAction Stop
-
-$key = "b3f8fa53-0004-438e-9003-51a46e139bfc"
+# Exact Windows 11 registry property name
+$propertyName = "{b3f8fa53-0004-438e-9003-51a46e139bfc},0"
 
 # Base registry paths
 $basePaths = @{
@@ -29,7 +23,7 @@ $basePaths = @{
 
 $allDevicePaths = @()
 
-# Enumerate ALL devices (Playback + Recording)
+# Enumerate all playback and recording devices
 foreach ($type in $basePaths.Keys) {
     $basePath = $basePaths[$type]
 
@@ -37,45 +31,61 @@ foreach ($type in $basePaths.Keys) {
         $devices = Get-ChildItem -Path $basePath -ErrorAction Stop
 
         foreach ($device in $devices) {
-            $propertiesPath = Join-Path $device.PSPath "Properties"
-            $allDevicePaths += $propertiesPath
-        }
+            $propertiesPath = Join-Path -Path $device.PSPath -ChildPath "Properties"
 
-    } catch {
-        Write-Output "Failed to enumerate $type devices"
+            if (Test-Path -LiteralPath $propertiesPath) {
+                $allDevicePaths += $propertiesPath
+            }
+        }
+    }
+    catch {
+        Write-Output "Failed to enumerate $type devices: $($_.Exception.Message)"
     }
 }
 
-# Remove duplicates (just in case)
+# Remove duplicates
 $allDevicePaths = $allDevicePaths | Select-Object -Unique
 
-# Apply setting to ALL devices
+# Apply the setting to all devices
 foreach ($regPath in $allDevicePaths) {
     try {
         New-ItemProperty `
-            -Path $regPath `
-            -Name $key `
+            -LiteralPath $regPath `
+            -Name $propertyName `
             -Value 0 `
-            -PropertyType DWORD `
+            -PropertyType DWord `
             -Force `
-            -ErrorAction Stop
+            -ErrorAction Stop | Out-Null
 
         Write-Output "Updated: $regPath"
-
-    } catch {
-        Write-Output "Failed: $regPath"
+    }
+    catch {
+        Write-Output "Failed: $regPath — $($_.Exception.Message)"
     }
 }
 
-# Set microphone permissions (HKCU)
-
+# Set microphone permission for Windows 365
 $PFN = "MicrosoftCorporationII.Windows365_8wekyb3d8bbwe"
 
 $BasePath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone"
-$AppPath  = Join-Path $BasePath $PFN
+$AppPath  = Join-Path -Path $BasePath -ChildPath $PFN
 
-if (-not (Test-Path $AppPath)) {
-    New-Item -Path $AppPath -Force | Out-Null
+try {
+    if (-not (Test-Path -LiteralPath $AppPath)) {
+        New-Item -Path $AppPath -Force -ErrorAction Stop | Out-Null
+    }
+
+    New-ItemProperty `
+        -LiteralPath $AppPath `
+        -Name "Value" `
+        -Value "Allow" `
+        -PropertyType String `
+        -Force `
+        -ErrorAction Stop | Out-Null
+
+    Write-Output "Windows 365 microphone permission set to Allow."
 }
-
-New-ItemProperty -Path $AppPath -Name "Value" -Value "Allow" -PropertyType String -Force | Out-Null
+catch {
+    Write-Output "Failed to set Windows 365 microphone permission: $($_.Exception.Message)"
+    exit 1
+}
